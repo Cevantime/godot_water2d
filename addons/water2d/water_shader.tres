@@ -1,0 +1,142 @@
+[gd_resource type="ShaderMaterial" load_steps=4 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+render_mode unshaded;
+
+uniform float reftime;
+uniform vec2 water_size;
+uniform float water_level = 0.2;
+uniform float surface_width = 1.0;
+uniform float drop_deformation_speed = 0.15;
+uniform float drop_height = 0.1;
+uniform float drop_duration = 100.0;
+uniform float drop_distance_attenuation = 0.01;
+uniform float drop_speed = 100.0;
+uniform float drop_length = 1.0;
+uniform sampler2D deformation_texture: hint_black;
+uniform vec2 deformation_size = vec2(0.2, 0.2);
+uniform vec2 deformation_strength = vec2(0.01, 0.01);
+uniform float agitation = 0.5;
+uniform vec4 color : hint_color;
+
+uniform vec2 pos0 = vec2(-1.0,-1.0);
+uniform float time0 = 0;
+uniform vec2 pos1 = vec2(-1.0,-1.0);
+uniform float time1 = 0;
+uniform vec2 pos2 = vec2(-1.0,-1.0);
+uniform float time2 = 0;
+uniform vec2 pos3 = vec2(-1.0,-1.0);
+uniform float time3 = 0;
+uniform vec2 pos4 = vec2(-1.0,-1.0);
+uniform float time4 = 0;
+uniform vec2 pos5 = vec2(-1.0,-1.0);
+uniform float time5 = 0;
+uniform vec2 pos6 = vec2(-1.0,-1.0);
+uniform float time6 = 0;
+
+float add_drop(vec2 pos, float t, vec2 drop_pos) {
+	if(drop_pos.x < 0.0) {
+		return 0.0;
+	}
+	vec2 relative_pos = drop_pos - pos;
+	float mul_limit = 20.0; 
+	float mul = 1.0 - abs(relative_pos.y) / mul_limit;
+	if(mul < 0.0) mul = 0.0;
+	float dist = length(relative_pos);
+	float time = t / 1000.0 * drop_speed;
+	float normalized_dist = dist / drop_length;
+	if (time <= normalized_dist) {
+		return 0.0;
+	}
+	float amp = 0.0;
+	amp += (sin((normalized_dist - time ) * drop_deformation_speed));
+	amp *= drop_height / (1.0 + normalized_dist * drop_distance_attenuation);
+	amp *= exp((normalized_dist - time) / drop_duration) ;
+	return amp * mul;
+}
+
+void fragment(){
+	vec2 u_pos = UV;
+	
+	float time = reftime;
+	float amp = 0.0;
+	
+	vec2 pos = u_pos * water_size;
+	
+//	if(pos0.x >= 0.0) {
+//		vec2 drop_pos = pos0;
+//		float dist = sqrt(pow(pos.x - drop_pos.x, 2.0) + pow(pos.y - drop_pos.y, 2.0));
+//		float normalized_dist = dist / drop_length;
+//		if(normalized_dist < 20.0) {
+//			COLOR = vec4(1.0,0.0,0.0,0.5);
+//		}
+//	}
+	
+	
+	amp += add_drop(pos, (time - time0), pos0);
+	amp += add_drop(pos, (time - time1), pos1);
+	amp += add_drop(pos, (time - time2), pos2);
+	amp += add_drop(pos, (time - time3), pos3);
+	amp += add_drop(pos, (time - time4), pos4);
+	amp += add_drop(pos, (time - time5), pos5);
+	amp += add_drop(pos, (time - time6), pos6);
+
+
+	vec4 deformation_color = texture(deformation_texture, (u_pos + TIME * agitation) * deformation_size);
+	vec2 deformation_texture_offset = deformation_color.rg;
+	deformation_texture_offset = deformation_texture_offset * 2.0 - 1.0;
+	deformation_texture_offset *= deformation_strength;
+
+	vec2 final_pos = u_pos + vec2(amp, amp) + deformation_texture_offset;
+	vec2 real_final_pos = final_pos * water_size;
+//	vec2 final_pos = u_pos;
+	if(final_pos.y < water_level) {
+		COLOR = textureLod(SCREEN_TEXTURE, SCREEN_UV, 0.0);
+	} else if(real_final_pos.y < water_level * water_size.y + surface_width) {
+		COLOR = vec4(1.0,1.0,1.0, 0.8);
+	} else {
+		vec4 final_color = textureLod(SCREEN_TEXTURE, SCREEN_UV + vec2(amp, amp) + deformation_texture_offset, 0.0);
+		final_color = mix(final_color, color, 0.5);
+		COLOR = final_color;
+	}
+}"
+
+[sub_resource type="OpenSimplexNoise" id=2]
+
+[sub_resource type="NoiseTexture" id=3]
+noise = SubResource( 2 )
+
+[resource]
+shader = SubResource( 1 )
+shader_param/reftime = 55263
+shader_param/water_size = Vector2( 100, 64 )
+shader_param/water_level = 0.2
+shader_param/surface_width = 1.0
+shader_param/drop_deformation_speed = 0.15
+shader_param/drop_height = 0.1
+shader_param/drop_duration = 100.0
+shader_param/drop_distance_attenuation = 0.01
+shader_param/drop_speed = 100.0
+shader_param/drop_length = 1.0
+shader_param/deformation_size = Vector2( 0.2, 0.2 )
+shader_param/deformation_strength = Vector2( 0.01, 0.01 )
+shader_param/agitation = 0.5
+shader_param/color = Color( 0.0745098, 0.847059, 1, 1 )
+shader_param/pos0 = Vector2( -1, -1 )
+shader_param/time0 = 0.0
+shader_param/pos1 = Vector2( -1, -1 )
+shader_param/time1 = 0.0
+shader_param/pos2 = Vector2( -1, -1 )
+shader_param/time2 = 0.0
+shader_param/pos3 = Vector2( -1, -1 )
+shader_param/time3 = 0.0
+shader_param/pos4 = Vector2( -1, -1 )
+shader_param/time4 = 0.0
+shader_param/pos5 = Vector2( -1, -1 )
+shader_param/time5 = 0.0
+shader_param/pos6 = Vector2( -1, -1 )
+shader_param/time6 = 0.0
+shader_param/deformation_texture = SubResource( 3 )
+

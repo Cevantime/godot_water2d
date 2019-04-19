@@ -46,12 +46,13 @@ func _on_Area2D_body_shape_entered(body_id, body, body_shape, area_shape):
 	var body_pos_relative_top_left = body.global_position - sprite_top_left
 	var surface_y = size.y * material.get_shader_param("water_level")
 	var impact_pos = Vector2(body_pos_relative_top_left.x, surface_y)
-	if impact_pos.y >= body_pos_relative_top_left.y :
+	if impact_pos.y <= body.global_position.y :
 		add_impact(impact_pos)
-		emit_signal("water_splash", body_id, body, body_shape, area_shape)
+	emit_signal("water_splash", body_id, body, body_shape, area_shape)
 	
 
 func add_impact(screen_pos):
 	material.set_shader_param("pos" + str(drop_index), screen_pos)
 	material.set_shader_param("time" + str(drop_index), OS.get_ticks_msec())
 	drop_index = (drop_index + 1) % 7
+

@@ -7,7 +7,9 @@ var collision_shape: CollisionShape2D
 var owner_id: int
 var area_rid: RID
 
-signal water_splash
+signal water_entered
+signal water_exited
+signal water_splashed
 
 # Called when the node enters the scene tree for the first time.
 func _enter_tree():
@@ -20,6 +22,8 @@ func _enter_tree():
 	area2d.add_child(collision_shape)
 	area2d.connect("area_shape_entered", self, "_on_Area2D_body_shape_entered") 
 	area2d.connect("body_shape_entered", self, "_on_Area2D_body_shape_entered") 
+	area2d.connect("area_shape_exited", self, "_on_Area2D_body_shape_exited") 
+	area2d.connect("body_shape_exited", self, "_on_Area2D_body_shape_exited")
 	add_child(area2d)
 
 
@@ -39,20 +43,26 @@ func adjust_water_area():
 	area2d.position.y = (sprite_size.y - new_rect_extents.y * 2) / 2
 	material.set_shader_param("water_size", sprite_size * scale)
 	
-
-func _on_Area2D_body_shape_entered(body_id, body, body_shape, area_shape):
+func compute_impact_pos(body):
 	var size = get_rect().size * scale
 	var sprite_top_left = global_position - size / 2;
 	var body_pos_relative_top_left = body.global_position - sprite_top_left
 	var surface_y = size.y * material.get_shader_param("water_level")
-	var impact_pos = Vector2(body_pos_relative_top_left.x, surface_y)
+	return Vector2(body_pos_relative_top_left.x, surface_y)
+
+func _on_Area2D_body_shape_entered(body_id, body, body_shape, area_shape):
+	var impact_pos = compute_impact_pos(body)
 	if impact_pos.y <= body.global_position.y :
 		add_impact(impact_pos)
-	emit_signal("water_splash", body_id, body, body_shape, area_shape)
+		emit_signal("water_splashed", impact_pos, body_id, body, body_shape, area_shape)
+	emit_signal("water_entered", body_id, body, body_shape, area_shape)
 	
-
-func add_impact(screen_pos):
-	material.set_shader_param("pos" + str(drop_index), screen_pos)
+func _on_Area2D_body_shape_exited(body_id, body, body_shape, area_shape):
+	var impact_pos = compute_impact_pos(body)
+	emit_signal("water_exited", impact_pos, body_id, body, body_shape, area_shape)
+	
+func add_impact(pos):
+	material.set_shader_param("pos" + str(drop_index), pos)
 	material.set_shader_param("time" + str(drop_index), OS.get_ticks_msec())
 	drop_index = (drop_index + 1) % 7
 

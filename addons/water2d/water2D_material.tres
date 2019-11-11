@@ -1,0 +1,133 @@
+[gd_resource type="ShaderMaterial" load_steps=6 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D noise1 : hint_black;
+uniform sampler2D noise2 : hint_black;
+
+uniform float deformation_speed = 0.1;
+uniform vec2 deformation_size = vec2(0.01, 0.01);
+uniform vec2 tile_factor = vec2(1.0,1.0);
+
+uniform vec2 scale = vec2(1.0, 1.0);
+uniform vec4 color: hint_color = vec4(0.0, 0.0, 1.0, 0.5);
+
+uniform float water_level = 40.0;
+uniform float surface_width = 2.0;
+
+uniform float wave_speed = 50.0;
+uniform float wave_length = 10.0;
+uniform float wave_height = 1.0;
+uniform float wave_distance_attenuation = 1.0;
+uniform float wave_time_attenuation = 1.0;
+
+uniform float impact_time_0 = -1;
+uniform float impact_time_1 = -1;
+uniform float impact_time_2 = -1;
+uniform float impact_time_3 = -1;
+uniform float impact_time_4 = -1;
+uniform float impact_time_5 = -1;
+uniform float impact_time_6 = -1;
+uniform float impact_time_7 = -1;
+
+uniform vec2 impact_pos_0 = vec2(-1, -1);
+uniform vec2 impact_pos_1 = vec2(-1, -1);
+uniform vec2 impact_pos_2 = vec2(-1, -1);
+uniform vec2 impact_pos_3 = vec2(-1, -1);
+uniform vec2 impact_pos_4 = vec2(-1, -1);
+uniform vec2 impact_pos_5 = vec2(-1, -1);
+uniform vec2 impact_pos_6 = vec2(-1, -1);
+uniform vec2 impact_pos_7 = vec2(-1, -1);
+
+uniform float current_time;
+
+float add_wave_impact(vec2 pixel_pos, vec2 impact_pixel_pos, float time_since_impact) {
+	if(impact_pixel_pos.y < 0.0) {
+		return 0.0;
+	}
+	float dist = length(pixel_pos - impact_pixel_pos);
+	float delay = dist / wave_speed;
+	
+	if(time_since_impact < delay) {
+		return 0.0;
+	}
+	
+	float amp = sin(wave_speed * (time_since_impact - delay) / wave_length);
+	amp /= 1.0 + dist * wave_distance_attenuation * 0.01;
+	amp *= exp(-time_since_impact * wave_time_attenuation);
+	return - amp * wave_height;
+}
+
+void fragment() {
+	vec2 u_pos = UV * scale * tile_factor + TIME * deformation_speed;
+	vec2 offset = vec2(texture(noise1, u_pos).x, texture(noise2, u_pos).x ) - 0.5;
+	vec2 pixel_pos = UV * scale / TEXTURE_PIXEL_SIZE;
+	
+	offset += add_wave_impact(pixel_pos, impact_pos_0, current_time - impact_time_0);
+	offset += add_wave_impact(pixel_pos, impact_pos_1, current_time - impact_time_1);
+	offset += add_wave_impact(pixel_pos, impact_pos_2, current_time - impact_time_2);
+	offset += add_wave_impact(pixel_pos, impact_pos_3, current_time - impact_time_3);
+	offset += add_wave_impact(pixel_pos, impact_pos_4, current_time - impact_time_4);
+	offset += add_wave_impact(pixel_pos, impact_pos_5, current_time - impact_time_5);
+	offset += add_wave_impact(pixel_pos, impact_pos_6, current_time - impact_time_6);
+	offset += add_wave_impact(pixel_pos, impact_pos_7, current_time - impact_time_7);
+	
+	vec2 deformation = offset * deformation_size;
+	vec2 real_pos = (UV * scale / TEXTURE_PIXEL_SIZE) + (deformation * 500.0);
+	if( real_pos.y < water_level) {
+		return;
+	} else if( real_pos.y < water_level + surface_width) {
+		COLOR = vec4(1.0, 1.0, 1.0, 1.0);
+	} else {
+		COLOR = mix(textureLod(SCREEN_TEXTURE, SCREEN_UV + offset * deformation_size, 0.), vec4(color.rgb, 1.0), color.a);
+	}
+
+}"
+
+[sub_resource type="OpenSimplexNoise" id=2]
+
+[sub_resource type="NoiseTexture" id=3]
+seamless = true
+noise = SubResource( 2 )
+
+[sub_resource type="OpenSimplexNoise" id=4]
+seed = 1
+
+[sub_resource type="NoiseTexture" id=5]
+seamless = true
+noise = SubResource( 4 )
+
+[resource]
+shader = SubResource( 1 )
+shader_param/deformation_speed = 0.2
+shader_param/deformation_size = Vector2( 0.01, 0.01 )
+shader_param/tile_factor = Vector2( 1, 1 )
+shader_param/scale = Vector2( 7.96627, 3.29147 )
+shader_param/color = Color( 1, 0, 0.317647, 0.501961 )
+shader_param/water_level = 50.0
+shader_param/surface_width = 2.0
+shader_param/wave_speed = 200.0
+shader_param/wave_length = 20.0
+shader_param/wave_height = 5.0
+shader_param/wave_distance_attenuation = 1.0
+shader_param/wave_time_attenuation = 1.0
+shader_param/impact_time_0 = -1.0
+shader_param/impact_time_1 = -1.0
+shader_param/impact_time_2 = -1.0
+shader_param/impact_time_3 = -1.0
+shader_param/impact_time_4 = -1.0
+shader_param/impact_time_5 = -1.0
+shader_param/impact_time_6 = -1.0
+shader_param/impact_time_7 = -1.0
+shader_param/impact_pos_0 = Vector2( -1, -1 )
+shader_param/impact_pos_1 = Vector2( -1, -1 )
+shader_param/impact_pos_2 = Vector2( -1, -1 )
+shader_param/impact_pos_3 = Vector2( -1, -1 )
+shader_param/impact_pos_4 = Vector2( -1, -1 )
+shader_param/impact_pos_5 = Vector2( -1, -1 )
+shader_param/impact_pos_6 = Vector2( -1, -1 )
+shader_param/impact_pos_7 = Vector2( -1, -1 )
+shader_param/current_time = 2157.59
+shader_param/noise1 = SubResource( 3 )
+shader_param/noise2 = SubResource( 5 )

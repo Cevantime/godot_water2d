@@ -98,7 +98,7 @@ void fragment() {
 	vec2 deformation = offset * deformation_strength * 0.01;
 	vec2 real_pos = (UV * scale / TEXTURE_PIXEL_SIZE) + (deformation * 500.0 * surface_deformation_strength);
 	if( real_pos.y < water_level) {
-		return;
+		 COLOR = vec4(1.0, 1.0, 1.0, 0.0);
 	} else if( real_pos.y < water_level + surface_width) {
 		if(surface_type == 0) {
 			COLOR = surface_color;
